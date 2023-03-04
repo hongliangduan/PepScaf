@@ -1,0 +1,25 @@
+name: pepscaf
+channels:
+  - pytorch
+  - nvidia
+  - scikit-learn
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pytorch==1.12.1
+  - cudatoolkit=11.3
+  - torchmetrics=0.10.0
+  - ipykernel
+  - numpy
+  - biopython
+  - scikit-learn
+  - scikit-learn-intelex
+  - pandas
+  - tensorboardX
+  - rich
+  - fire
+  - tqdm
+  - matplotlib
+  - future
+  - jupyter
+  - black
