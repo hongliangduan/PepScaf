@@ -40,12 +40,18 @@ mamba activate pepscaf
 ```bash
 python bin/preprocessing.py  # preprocessing for raw data
 python bin/cluster.py  # get cluster to get targets
+```
 
-# Train and Evaluation
+### Train and Evaluation
+
+```bash
 bash train.sh
 bash eval.sh
+```
 
-# Analysis on cluster
+### Analysis and Gneration
+
+```bash
 bash get_attn.sh
 ```
 
@@ -61,7 +67,7 @@ bash mcts.sh  # run mcts to get the scaffold
 2. The Pep-BERT was build based fon [pytorchic-bert](https://github.com/dhlee347/pytorchic-bert), which is a re-implementation of [Google BERT](https://github.com/google-research/bert) model in Pytorch.
 3. The code was formattered by [Black](https://github.com/psf/black).
 4. The building of MCTS parts refered to int8's [mcts](https://github.com/int8/monte-carlo-tree-search).
-5. [weblog](https://weblogo.berkeley.edu/logo.cgi)
+5. [Weblog](https://weblogo.berkeley.edu/logo.cgi)
 6. The visualization of attention was modified from [Pytorch Community](https://pytorch.org/tutorials/)
 7. The [CD-HIT](https://sites.google.com/view/cd-hit) tool and [Biopython](https://biopython.org) was used for clustering sequence-based macrocyclic peptides.
 
