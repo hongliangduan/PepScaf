@@ -11,6 +11,7 @@ from conf import Sentence, Mcts
 
 log = get_logger(__name__)
 
+
 class PepMove(AbstractGenAction):
     def __init__(self, value):
         self.value = value
@@ -23,7 +24,6 @@ class PepMove(AbstractGenAction):
 
 
 class PepGenState(PepState):
-
     def __init__(self, pep: ndarray, predictor, action_set):
         self.pep = pep
         self.predictor = predictor
@@ -38,7 +38,9 @@ class PepGenState(PepState):
             return None
         score = self.predictor(self.pep)
         if score > self.cut:
-            log.info(f'Score of {"".join([Sentence.int2token[i] for i in self.pep])} is {score:.1f}, which is greater than {self.cut}')
+            log.info(
+                f'Score of {"".join([Sentence.int2token[i] for i in self.pep])} is {score:.1f}, which is greater than {self.cut}'
+            )
             return 1
         else:
             return 0

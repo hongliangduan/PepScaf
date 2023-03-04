@@ -59,7 +59,7 @@ bash mcts.sh  # run mcts to get the scaffold
 
 1. The implementation of Pep-BERT is partly inspired by [A transformer-based model to predict peptide–HLA class I binding and optimize mutated peptides for vaccine design](https://www.nature.com/articles/s42256-022-00459-7) and [MolSearch: Search-based multi-objective molecular generation and property optimization](https://doi.org/10.1145/3534678.3542676).
 2. The Pep-BERT was build based fon [pytorchic-bert](https://github.com/dhlee347/pytorchic-bert), which is a re-implementation of [Google BERT](https://github.com/google-research/bert) model in Pytorch.
-3. The code was formatter by [Black](https://github.com/psf/black).
+3. The code was formattered by [Black](https://github.com/psf/black).
 4. The building of MCTS parts refered to int8's [mcts](https://github.com/int8/monte-carlo-tree-search).
 5. [weblog](https://weblogo.berkeley.edu/logo.cgi)
 6. The visualization of attention was modified from [Pytorch Community](https://pytorch.org/tutorials/)

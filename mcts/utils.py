@@ -10,7 +10,7 @@ from typing import Optional
 
 import numpy as np
 import torch
-from itertools import (takewhile, repeat)
+from itertools import takewhile, repeat
 
 from rich.logging import RichHandler
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
@@ -20,7 +20,8 @@ def iter_count(file_name):
     buffer = 1024 * 1024
     with open(file_name) as f:
         buf_gen = takewhile(lambda x: x, (f.read(buffer) for _ in repeat(None)))
-        return sum(buf.count('\n') for buf in buf_gen)
+        return sum(buf.count("\n") for buf in buf_gen)
+
 
 def set_seeds(seed):
     "set random seeds"
@@ -29,12 +30,14 @@ def set_seeds(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
+
 def get_device():
     "get device (CPU or GPU)"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_gpu = torch.cuda.device_count()
     print("%s (%d GPUs)" % (device, n_gpu))
     return device
+
 
 def split_last(x, shape):
     "split the last dimension to given shape"
@@ -44,11 +47,13 @@ def split_last(x, shape):
         shape[shape.index(-1)] = int(x.size(-1) / -np.prod(shape))
     return x.view(*x.size()[:-1], *shape)
 
+
 def merge_last(x, n_dims):
     "merge the last n_dims to a dimension"
     s = x.size()
     assert n_dims > 1 and n_dims < len(s)
     return x.view(*s[:-n_dims], -1)
+
 
 def find_sublist(haystack, needle):
     """Return the index at which the sequence needle appears in the
@@ -70,6 +75,7 @@ def find_sublist(haystack, needle):
             return i - n + 1
     return -1
 
+
 def truncate_tokens_pair(tokens_a, tokens_b, max_len):
     while True:
         if len(tokens_a) + len(tokens_b) <= max_len:
@@ -79,15 +85,18 @@ def truncate_tokens_pair(tokens_a, tokens_b, max_len):
         else:
             tokens_b.pop()
 
+
 def get_random_word(vocab_words):
-    i = random.randint(0, len(vocab_words)-1)
+    i = random.randint(0, len(vocab_words) - 1)
     return vocab_words[i]
+
 
 def get_logger(name, log_path):
     "get logger"
     logger = logging.getLogger(name)
     fomatter = logging.Formatter(
-        '[ %(levelname)s|%(filename)s:%(lineno)s] %(asctime)s > %(message)s')
+        "[ %(levelname)s|%(filename)s:%(lineno)s] %(asctime)s > %(message)s"
+    )
 
     if not os.path.isfile(log_path):
         f = open(log_path, "w+")
@@ -96,26 +105,30 @@ def get_logger(name, log_path):
     fileHandler.setFormatter(fomatter)
     logger.addHandler(fileHandler)
 
-    #streamHandler = logging.StreamHandler()
-    #streamHandler.setFormatter(fomatter)
-    #logger.addHandler(streamHandler)
+    # streamHandler = logging.StreamHandler()
+    # streamHandler.setFormatter(fomatter)
+    # logger.addHandler(streamHandler)
 
     logger.setLevel(logging.DEBUG)
     return logger
 
+
 def get_logger(name):
     """获取一个 Rich 美化的 Logger"""
     logging.basicConfig(
-    level=logging.NOTSET,
-    format='%(name)s: %(message)s',
-    handlers=[RichHandler(
-        rich_tracebacks=True,
-        )])
+        level=logging.NOTSET,
+        format="%(name)s: %(message)s",
+        handlers=[RichHandler(rich_tracebacks=True,)],
+    )
     return logging.getLogger(name)
 
 
-
-def pbar(container, totol: Optional[float]=None, description='Working...', transient: bool=False):
+def pbar(
+    container,
+    totol: Optional[float] = None,
+    description="Working...",
+    transient: bool = False,
+):
     """Example Usage of Rich Progress
 
     Basic Usage:
@@ -153,24 +166,38 @@ def pbar(container, totol: Optional[float]=None, description='Working...', trans
     References:
         - [Rich Doc](https://rich.readthedocs.io/en/stable/progress.html#advanced-usage)
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            with Progress(SpinnerColumn(), *Progress.get_default_columns(), "Elapsed:", TimeElapsedColumn(), transient=transient) as progress:
-                for i in progress.track(container, description=description, total=totol):
+            with Progress(
+                SpinnerColumn(),
+                *Progress.get_default_columns(),
+                "Elapsed:",
+                TimeElapsedColumn(),
+                transient=transient
+            ) as progress:
+                for i in progress.track(
+                    container, description=description, total=totol
+                ):
                     func(i, *args, **kwargs)
+
         return wrapper
+
     return decorator
+
 
 def iter_count(file_name):
     """获取文本行数"""
     buffer = 1024 * 1024
     with open(file_name) as f:
         buf_gen = takewhile(lambda x: x, (f.read(buffer) for _ in repeat(None)))
-        return sum(buf.count('\n') for buf in buf_gen)
+        return sum(buf.count("\n") for buf in buf_gen)
+
 
 import pandas as pd
 from rich.table import Table
+
 
 def df_to_table(
     pandas_dataframe: pd.DataFrame,

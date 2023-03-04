@@ -20,6 +20,7 @@ logger.setLevel(logging.DEBUG)
 # 2. Blank lines between documents. Document boundaries are needed
 #    so that the "next sentence prediction" task doesn't span between documents.
 
+
 def seek_random_offset(f, back_margin=2000):
     """ seek random offset of file pointer """
     f.seek(0, 2)
@@ -29,10 +30,12 @@ def seek_random_offset(f, back_margin=2000):
     f.readline()  # throw away an incomplete sentence
 
 
-class PepPairDataLoader():
+class PepPairDataLoader:
     """ Load Peptide pair (sequential or random order) from corpus """
 
-    def __init__(self, file, batch_size, tokenize, max_len, short_sampling_prob=0.1, pipeline=[]):
+    def __init__(
+        self, file, batch_size, tokenize, max_len, short_sampling_prob=0.1, pipeline=[]
+    ):
         super().__init__()
         self.df = pd.read_csv(file, index_col=0)
         self.num_data = len(self.df)
@@ -55,11 +58,13 @@ class PepPairDataLoader():
             for j in range(self.batch_size):
                 # print(f'iloc: {self.i}')
                 is_next = rand() < 0.5
-                tokens_a = list(self.cycle_idx(self.i, 'seq'))
+                tokens_a = list(self.cycle_idx(self.i, "seq"))
                 if is_next:
-                    tokens_b = list(self.cycle_idx(self.i, 'next'))
+                    tokens_b = list(self.cycle_idx(self.i, "next"))
                 else:
-                    tokens_b = list(self.cycle_idx(randint(0, self.num_data - 1), 'next'))
+                    tokens_b = list(
+                        self.cycle_idx(randint(0, self.num_data - 1), "next")
+                    )
                 instance = (is_next, tokens_a, tokens_b)
 
                 for proc in self.pipeline:
@@ -73,7 +78,7 @@ class PepPairDataLoader():
             yield batch_tensors
 
 
-class Pipeline():
+class Pipeline:
     """ Pre-process Pipeline Class : callable """
 
     def __init__(self):
@@ -101,7 +106,7 @@ class Preprocess4Pretrain(Pipeline):
         truncate_tokens_pair(tokens_a, tokens_b, self.max_len - 3)
 
         # Add Special Tokens
-        tokens = ['[CLS]'] + tokens_a + ['[SEP]'] + tokens_b + ['[SEP]']
+        tokens = ["[CLS]"] + tokens_a + ["[SEP]"] + tokens_b + ["[SEP]"]
         segment_ids = [0] * (len(tokens_a) + 2) + [1] * (len(tokens_b) + 1)
         input_mask = [1] * len(tokens)
 
@@ -110,14 +115,15 @@ class Preprocess4Pretrain(Pipeline):
         # the number of prediction is sometimes less than max_pred when sequence is short
         n_pred = min(self.max_pred, max(1, int(round(len(tokens) * self.mask_prob))))
         # candidate positions of masked tokens
-        cand_pos = [i for i, token in enumerate(tokens)
-                    if token != '[CLS]' and token != '[SEP]']
+        cand_pos = [
+            i for i, token in enumerate(tokens) if token != "[CLS]" and token != "[SEP]"
+        ]
         shuffle(cand_pos)
         for pos in cand_pos[:n_pred]:
             masked_tokens.append(tokens[pos])
             masked_pos.append(pos)
             if rand() < 0.8:  # 80%
-                tokens[pos] = '[MASK]'
+                tokens[pos] = "[MASK]"
             elif rand() < 0.5:  # 10%
                 tokens[pos] = get_random_word(self.vocab_words)
         # when n_pred < max_pred, we only calculate loss within n_pred
@@ -140,7 +146,15 @@ class Preprocess4Pretrain(Pipeline):
             masked_pos.extend([0] * n_pad)
             masked_weights.extend([0] * n_pad)
 
-        return (input_ids, segment_ids, input_mask, masked_ids, masked_pos, masked_weights, is_next)
+        return (
+            input_ids,
+            segment_ids,
+            input_mask,
+            masked_ids,
+            masked_pos,
+            masked_weights,
+            is_next,
+        )
 
 
 class BertModel4Pretrain(nn.Module):
@@ -175,38 +189,44 @@ class BertModel4Pretrain(nn.Module):
         return logits_lm, logits_clsf
 
 
-def main(train_cfg='config/pretrain.json',
-         model_cfg='config/bert.json',
-         data_file='data/FSA/pretrain.csv',
-         model_file=None,
-         data_parallel=True,
-         vocab='data/vocab.txt',
-         save_dir='models',
-         log_dir='logs',
-         max_len=28,
-         max_pred=8,
-         mask_prob=0.15):
+def main(
+    train_cfg="config/pretrain.json",
+    model_cfg="config/bert.json",
+    data_file="data/FSA/pretrain.csv",
+    model_file=None,
+    data_parallel=True,
+    vocab="data/vocab.txt",
+    save_dir="models",
+    log_dir="logs",
+    max_len=28,
+    max_pred=8,
+    mask_prob=0.15,
+):
     cfg = train.Config.from_json(train_cfg)
     model_cfg = models.Config.from_json(model_cfg)
 
     set_seeds(cfg.seed)
 
-    tokenizer = tokenization.FullTokenizer(vocab_file=vocab, do_lower_case=False)  # 注意这里要 False
+    tokenizer = tokenization.FullTokenizer(
+        vocab_file=vocab, do_lower_case=False
+    )  # 注意这里要 False
     tokenize = lambda x: tokenizer.tokenize(tokenizer.convert_to_unicode(x))
 
-    pipeline = [Preprocess4Pretrain(max_pred,
-                                    mask_prob,
-                                    list(tokenizer.vocab.keys()),
-                                    tokenizer.convert_tokens_to_ids,
-                                    max_len)]
-    data_iter = PepPairDataLoader(data_file,
-                                  cfg.batch_size,
-                                  tokenize,
-                                  max_len,
-                                  pipeline=pipeline)
+    pipeline = [
+        Preprocess4Pretrain(
+            max_pred,
+            mask_prob,
+            list(tokenizer.vocab.keys()),
+            tokenizer.convert_tokens_to_ids,
+            max_len,
+        )
+    ]
+    data_iter = PepPairDataLoader(
+        data_file, cfg.batch_size, tokenize, max_len, pipeline=pipeline
+    )
 
     model = BertModel4Pretrain(model_cfg)
-    criterion1 = nn.CrossEntropyLoss(reduction='none')
+    criterion1 = nn.CrossEntropyLoss(reduction="none")
     criterion2 = nn.CrossEntropyLoss()
 
     optimizer = optim.optim4GPU(cfg, model)
@@ -215,22 +235,34 @@ def main(train_cfg='config/pretrain.json',
     writer = SummaryWriter(log_dir=log_dir)  # for tensorboardX
 
     def get_loss(model, batch, global_step):  # make sure loss is tensor
-        input_ids, segment_ids, input_mask, masked_ids, masked_pos, masked_weights, is_next = batch
+        (
+            input_ids,
+            segment_ids,
+            input_mask,
+            masked_ids,
+            masked_pos,
+            masked_weights,
+            is_next,
+        ) = batch
 
         logits_lm, logits_clsf = model(input_ids, segment_ids, input_mask, masked_pos)
         loss_lm = criterion1(logits_lm.transpose(1, 2), masked_ids)  # for masked LM
         loss_lm = (loss_lm * masked_weights.float()).mean()
         loss_clsf = criterion2(logits_clsf, is_next)  # for sentence classification
-        writer.add_scalars('data/scalar_group',
-                           {'loss_lm': loss_lm.item(),
-                            'loss_clsf': loss_clsf.item(),
-                            'loss_total': (loss_lm + loss_clsf).item(),
-                            'lr': optimizer.get_lr()[0],
-                            },
-                           global_step)
+        writer.add_scalars(
+            "data/scalar_group",
+            {
+                "loss_lm": loss_lm.item(),
+                "loss_clsf": loss_clsf.item(),
+                "loss_total": (loss_lm + loss_clsf).item(),
+                "lr": optimizer.get_lr()[0],
+            },
+            global_step,
+        )
         return loss_lm + loss_clsf
 
     trainer.train(get_loss, model_file, None, data_parallel)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     fire.Fire(main)

@@ -61,7 +61,9 @@ class Embeddings(nn.Module):
         super().__init__()
         self.tok_embed = nn.Embedding(cfg.vocab_size, cfg.dim)  # token embedding
         self.pos_embed = nn.Embedding(cfg.max_len, cfg.dim)  # position embedding
-        self.seg_embed = nn.Embedding(cfg.n_segments, cfg.dim)  # segment(token type) embedding
+        self.seg_embed = nn.Embedding(
+            cfg.n_segments, cfg.dim
+        )  # segment(token type) embedding
 
         self.norm = LayerNorm(cfg)
         self.drop = nn.Dropout(cfg.p_drop_hidden)
@@ -95,8 +97,7 @@ class MultiHeadedSelfAttention(nn.Module):
         """
         # (B, S, D) -proj-> (B, S, D) -split-> (B, S, H, W) -trans-> (B, H, S, W)
         q, k, v = self.proj_q(x), self.proj_k(x), self.proj_v(x)
-        q, k, v = (split_last(x, (self.n_heads, -1)).transpose(1, 2)
-                   for x in [q, k, v])
+        q, k, v = (split_last(x, (self.n_heads, -1)).transpose(1, 2) for x in [q, k, v])
         # (B, H, S, W) @ (B, H, W, S) -> (B, H, S, S) -softmax-> (B, H, S, S)
         scores = q @ k.transpose(-2, -1) / np.sqrt(k.size(-1))
         if mask is not None:

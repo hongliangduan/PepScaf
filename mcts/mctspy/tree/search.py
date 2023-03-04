@@ -5,8 +5,8 @@ from conf import Mcts
 
 c_param = Mcts.c_param
 
-class MonteCarloTreeSearch(object):
 
+class MonteCarloTreeSearch(object):
     def __init__(self, node):
         """
         MonteCarloTreeSearchNode
@@ -33,7 +33,7 @@ class MonteCarloTreeSearch(object):
         """
 
         if simulations_number is None:
-            assert (total_simulation_seconds is not None)
+            assert total_simulation_seconds is not None
             end_time = time.time() + total_simulation_seconds
             while True:
                 v = self._tree_policy()
@@ -42,16 +42,24 @@ class MonteCarloTreeSearch(object):
                 if time.time() > end_time:
                     break
         else:
-            with Progress(SpinnerColumn(), *Progress.get_default_columns(), "Elapsed:",
-                          TimeElapsedColumn()) as progress:
-                for _ in progress.track(range(0, simulations_number), description='Searching...'):
+            with Progress(
+                SpinnerColumn(),
+                *Progress.get_default_columns(),
+                "Elapsed:",
+                TimeElapsedColumn()
+            ) as progress:
+                for _ in progress.track(
+                    range(0, simulations_number), description="Searching..."
+                ):
                     v = self._tree_policy()
                     reward = v.rollout()
                     v.backpropagate(reward)
         # to select best child go for exploitation only
         return self.root.best_child(c_param=c_param)
 
-    def best_actions(self, simulations_number=None, total_simulation_seconds=None, n_best=2):
+    def best_actions(
+        self, simulations_number=None, total_simulation_seconds=None, n_best=2
+    ):
         """
 
                 Parameters
@@ -69,7 +77,7 @@ class MonteCarloTreeSearch(object):
 
                 """
         if simulations_number is None:
-            assert (total_simulation_seconds is not None)
+            assert total_simulation_seconds is not None
             end_time = time.time() + total_simulation_seconds
             while True:
                 v = self._tree_policy()
@@ -78,9 +86,15 @@ class MonteCarloTreeSearch(object):
                 if time.time() > end_time:
                     break
         else:
-            with Progress(SpinnerColumn(), *Progress.get_default_columns(), "Elapsed:",
-                          TimeElapsedColumn()) as progress:
-                for _ in progress.track(range(0, simulations_number), description='Searching...'):
+            with Progress(
+                SpinnerColumn(),
+                *Progress.get_default_columns(),
+                "Elapsed:",
+                TimeElapsedColumn()
+            ) as progress:
+                for _ in progress.track(
+                    range(0, simulations_number), description="Searching..."
+                ):
                     v = self._tree_policy()
                     reward = v.rollout()
                     v.backpropagate(reward)

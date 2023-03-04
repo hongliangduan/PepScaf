@@ -8,7 +8,14 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torchmetrics.functional import auroc
 from bert import tokenization, optim, train, models
-from bert.utils import set_seeds, get_device, truncate_tokens_pair, iter_count, get_logger, pbar
+from bert.utils import (
+    set_seeds,
+    get_device,
+    truncate_tokens_pair,
+    iter_count,
+    get_logger,
+    pbar,
+)
 import logging
 from torch.nn.functional import softmax
 
@@ -18,6 +25,7 @@ log.setLevel(logging.INFO)
 
 class CsvDataset(Dataset):
     """ Dataset Class for CSV file """
+
     labels = None
 
     def __init__(self, file, pipeline=[]):  # cvs file and pipeline object
@@ -25,9 +33,13 @@ class CsvDataset(Dataset):
         data = []
         with open(file, "r") as f:
             # list of splitted lines : line is also list
-            lines = csv.reader(f, delimiter=',', quotechar=None)
+            lines = csv.reader(f, delimiter=",", quotechar=None)
 
-            @pbar(self.get_instances(lines), totol=iter_count(file), description='Loading data')
+            @pbar(
+                self.get_instances(lines),
+                totol=iter_count(file),
+                description="Loading data",
+            )
             def do(i, pipeline, data):
                 for proc in pipeline:  # a bunch of pre-processing
                     i = proc(i)
@@ -51,6 +63,7 @@ class CsvDataset(Dataset):
 
 class PepCLS(CsvDataset):
     """ Dataset class for MRPC"""
+
     labels = ("0", "1")  # label names
 
     def __init__(self, file, pipeline=[]):
@@ -59,12 +72,12 @@ class PepCLS(CsvDataset):
     def get_instances(self, lines):
         for line in itertools.islice(lines, 1, None):  # skip the header
             # label, text (0 for index)
-            yield ' '.join(list(line[2])), ' '.join(list(line[1])), None
+            yield " ".join(list(line[2])), " ".join(list(line[1])), None
 
 
 def dataset_class(task):
     """ Mapping from task string to Dataset Class """
-    table = {'pep_cls': PepCLS}
+    table = {"pep_cls": PepCLS}
     return table[task]
 
 
@@ -90,8 +103,7 @@ class Tokenizing(Pipeline):
         label, text_a, text_b = instance
         label = self.preprocessor(label)
         tokens_a = self.tokenize(self.preprocessor(text_a))
-        tokens_b = self.tokenize(self.preprocessor(text_b)) \
-            if text_b else []
+        tokens_b = self.tokenize(self.preprocessor(text_b)) if text_b else []
 
         return (label, tokens_a, tokens_b)
 
@@ -112,8 +124,8 @@ class AddSpecialTokensWithTruncation(Pipeline):
         truncate_tokens_pair(tokens_a, tokens_b, _max_len)
 
         # Add Special Tokens
-        tokens_a = ['[CLS]'] + tokens_a + ['[SEP]']
-        tokens_b = tokens_b + ['[SEP]'] if tokens_b else []
+        tokens_a = ["[CLS]"] + tokens_a + ["[SEP]"]
+        tokens_b = tokens_b + ["[SEP]"] if tokens_b else []
 
         return (label, tokens_a, tokens_b)
 
@@ -132,8 +144,7 @@ class TokenIndexing(Pipeline):
         label, tokens_a, tokens_b = instance
 
         input_ids = self.indexer(tokens_a + tokens_b)
-        segment_ids = [0] * len(tokens_a) + [1] * \
-            len(tokens_b)  # token type ids
+        segment_ids = [0] * len(tokens_a) + [1] * len(tokens_b)  # token type ids
         input_mask = [1] * (len(tokens_a) + len(tokens_b))
         label_id = self.label_map[label]
 
@@ -162,47 +173,51 @@ class Classifier(nn.Module):
         # only use the first h in the sequence
         pooled_h = self.activ(self.fc(h[:, 0]))
         logits = self.classifier(self.drop(pooled_h))
-        return logits, attn, pooled_h  # we also extract the h for visualization with umap
+        return (
+            logits,
+            attn,
+            pooled_h,
+        )  # we also extract the h for visualization with umap
 
 
-def main(task='pep_cls',
-         train_cfg='config/train.json',
-         model_cfg='config/bert.json',
-         data_file=None,
-         model_file=None,
-         data_parallel=True,
-         pretrain_file=None,
-         mode='train',
-         vocab='data/vocab.txt',
-         save_dir=None,
-         max_len=14,
-         ):
-    log.info('loading config...')
+def main(
+    task="pep_cls",
+    train_cfg="config/train.json",
+    model_cfg="config/bert.json",
+    data_file=None,
+    model_file=None,
+    data_parallel=True,
+    pretrain_file=None,
+    mode="train",
+    vocab="data/vocab.txt",
+    save_dir=None,
+    max_len=14,
+):
+    log.info("loading config...")
     cfg = train.Config.from_json(train_cfg)
     model_cfg = models.Config.from_json(model_cfg)
     set_seeds(cfg.seed)
-    log.info(f'Loading Data from {data_file}...')
-    tokenizer = tokenization.FullTokenizer(
-        vocab_file=vocab, do_lower_case=False)
+    log.info(f"Loading Data from {data_file}...")
+    tokenizer = tokenization.FullTokenizer(vocab_file=vocab, do_lower_case=False)
     # task dataset class according to the task
     TaskDataset = dataset_class(task)
-    pipeline = [Tokenizing(tokenizer.convert_to_unicode, tokenizer.tokenize),
-                AddSpecialTokensWithTruncation(max_len),
-                TokenIndexing(tokenizer.convert_tokens_to_ids,
-                              TaskDataset.labels, max_len)]
+    pipeline = [
+        Tokenizing(tokenizer.convert_to_unicode, tokenizer.tokenize),
+        AddSpecialTokensWithTruncation(max_len),
+        TokenIndexing(tokenizer.convert_tokens_to_ids, TaskDataset.labels, max_len),
+    ]
     dataset = TaskDataset(data_file, pipeline)
     data_iter = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True)
-    log.info(f'loading model from {model_file}...')
+    log.info(f"loading model from {model_file}...")
     model = Classifier(model_cfg, len(TaskDataset.labels))
     criterion = nn.CrossEntropyLoss()
-    log.info('start training...')
-    trainer = train.Trainer(cfg,
-                            model,
-                            data_iter,
-                            optim.optim4GPU(cfg, model),
-                            save_dir, get_device())
-    
-    if mode == 'train':
+    log.info("start training...")
+    trainer = train.Trainer(
+        cfg, model, data_iter, optim.optim4GPU(cfg, model), save_dir, get_device()
+    )
+
+    if mode == "train":
+
         def get_loss(model, batch, global_step):  # make sure loss is a scalar tensor
             input_ids, segment_ids, input_mask, label_id = batch
             logits, _, _ = model(input_ids, segment_ids, input_mask)
@@ -211,7 +226,8 @@ def main(task='pep_cls',
 
         trainer.train(get_loss, model_file, pretrain_file, data_parallel)
 
-    elif mode == 'eval':
+    elif mode == "eval":
+
         def evaluate(model, batch):
             input_ids, segment_ids, input_mask, label_id = batch
             logits, attns, pooled_h = model(input_ids, segment_ids, input_mask)
@@ -223,17 +239,25 @@ def main(task='pep_cls',
             # batch, layers, head, long, long
             rt_attns = torch.cat([t.unsqueeze(1) for t in attns], dim=1)
             # log.debug(f'in a batch evaluate, rt_attns: {rt_attns.shape}')
-            return accuracy, result, softmax(logits, dim=1), label_id, rt_attns, pooled_h
+            return (
+                accuracy,
+                result,
+                softmax(logits, dim=1),
+                label_id,
+                rt_attns,
+                pooled_h,
+            )
 
         results, logits, labels, attns, pooled_hs = trainer.eval(
-            evaluate, model_file, data_parallel)
+            evaluate, model_file, data_parallel
+        )
         total_accuracy = torch.cat(results).mean().item()
         auc_score = auroc(torch.cat(logits), torch.cat(labels), num_classes=2)
-        log.info(f'Accuracy: {total_accuracy}')
-        log.info(f'AUC Score: {auc_score}')
+        log.info(f"Accuracy: {total_accuracy}")
+        log.info(f"AUC Score: {auc_score}")
 
         if save_dir:
-            log.info('Output Attention Matrix')
+            log.info("Output Attention Matrix")
             rlines = []
             for data in dataset:
                 phla = data[0]
@@ -245,19 +269,19 @@ def main(task='pep_cls',
             log.debug(rlines[0])
             SAVE_DIR = Path(save_dir)
             SAVE_DIR.mkdir(exist_ok=True, parents=True)
-            with open(SAVE_DIR / 'attns.pkl', 'wb') as fattns:
+            with open(SAVE_DIR / "attns.pkl", "wb") as fattns:
                 # 这里拼接一下得到一整个张量
                 # num, layes, head, len, len
                 pickle.dump(torch.cat(attns), fattns)
-            with open(SAVE_DIR / 'tokens.pkl', 'wb') as ftokens:
+            with open(SAVE_DIR / "tokens.pkl", "wb") as ftokens:
                 pickle.dump(rlines, ftokens)
-            with open(SAVE_DIR / 'pooled_hs.pkl', 'wb') as fpooled_hs:
+            with open(SAVE_DIR / "pooled_hs.pkl", "wb") as fpooled_hs:
                 pickle.dump(torch.cat(pooled_hs), fpooled_hs)
-            with open(SAVE_DIR / 'labels.pkl', 'wb') as flabels:
+            with open(SAVE_DIR / "labels.pkl", "wb") as flabels:
                 pickle.dump(torch.cat(labels), flabels)
-            with open(SAVE_DIR / 'logits.pkl', 'wb') as flogits:
+            with open(SAVE_DIR / "logits.pkl", "wb") as flogits:
                 pickle.dump(torch.cat(logits), flogits)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     fire.Fire(main)

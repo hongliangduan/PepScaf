@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 
 class PepState(ABC):
-
     @abstractmethod
     def result(self):
         """
@@ -66,7 +65,6 @@ class AbstractGenAction(ABC):
 
 
 class TwoPlayersAbstractGameState(ABC):
-
     @abstractmethod
     def game_result(self):
         """

@@ -9,7 +9,7 @@ import models
 import checkpoint
 from numpy import ndarray
 
-aminos = list('AGVLIFWPDEKRHSTNQYCM')
+aminos = list("AGVLIFWPDEKRHSTNQYCM")
 token2int = {x: i for i, x in enumerate(list(aminos))}
 int2token = {k: x for x, k in token2int.items()}
 
@@ -41,8 +41,7 @@ class Tokenizing(Pipeline):
 
         tokens_a = self.tokenize(self.preprocessor(text_a))
 
-        tokens_b = self.tokenize(self.preprocessor(text_b)) \
-            if text_b else []
+        tokens_b = self.tokenize(self.preprocessor(text_b)) if text_b else []
 
         return (label, tokens_a, tokens_b)
 
@@ -63,8 +62,8 @@ class AddSpecialTokensWithTruncation(Pipeline):
         truncate_tokens_pair(tokens_a, tokens_b, _max_len)
 
         # Add Special Tokens
-        tokens_a = ['[CLS]'] + tokens_a + ['[SEP]']
-        tokens_b = tokens_b + ['[SEP]'] if tokens_b else []
+        tokens_a = ["[CLS]"] + tokens_a + ["[SEP]"]
+        tokens_b = tokens_b + ["[SEP]"] if tokens_b else []
 
         return (label, tokens_a, tokens_b)
 
@@ -97,19 +96,22 @@ class TokenIndexing(Pipeline):
         return (input_ids, segment_ids, input_mask, label_id)
 
 
-class PepEncoder():
+class PepEncoder:
     def __init__(self, vocab, max_len=28):
         self.max_len = max_len
-        self.tokenizer = tokenization.FullTokenizer(vocab_file=vocab, do_lower_case=False)
+        self.tokenizer = tokenization.FullTokenizer(
+            vocab_file=vocab, do_lower_case=False
+        )
         self.pipeline = [
             Tokenizing(self.tokenizer.convert_to_unicode, self.tokenizer.tokenize),
             AddSpecialTokensWithTruncation(self.max_len),
-            TokenIndexing(self.tokenizer.convert_tokens_to_ids,
-                          ('0', '1'), self.max_len)
+            TokenIndexing(
+                self.tokenizer.convert_tokens_to_ids, ("0", "1"), self.max_len
+            ),
         ]
 
     def __call__(self, label, sentence, next):
-        instance = ' '.join(list(label)), ' '.join(list(sentence)), ' '.join(list(next))
+        instance = " ".join(list(label)), " ".join(list(sentence)), " ".join(list(next))
         for proc in self.pipeline:
             instance = proc(instance)
         return [torch.tensor(x, dtype=torch.long) for x in instance]
@@ -131,19 +133,23 @@ class Classifier(nn.Module):
         # only use the first h in the sequence
         pooled_h = self.activ(self.fc(h[:, 0]))
         logits = self.classifier(self.drop(pooled_h))
-        return logits, attn, pooled_h  # we also extract the h for visualization with umap
+        return (
+            logits,
+            attn,
+            pooled_h,
+        )  # we also extract the h for visualization with umap
 
 
-class Predictor():
+class Predictor:
     def __init__(self, model, encoder, device):
         self.model = model
         self.encoder = encoder
         self.device = device
 
     def __call__(self, pep: ndarray):
-        pep_str = ''.join([int2token[p] for p in pep])
+        pep_str = "".join([int2token[p] for p in pep])
         # item = ('1', pep_str, pep_str[:3])
-        item = ('1', pep_str, '')
+        item = ("1", pep_str, "")
         pep = self.encoder(*item)
         data = [x.to(self.device).unsqueeze(0) for x in pep]
         input_ids, segment_ids, input_mask, label_id = data
@@ -152,7 +158,7 @@ class Predictor():
         return torch.argmax(softmax(logits, dim=1), dim=1).item()
 
 
-if __name__ == '__main__':
-    ecd = PepEncoder('../data/vocab.txt')
+if __name__ == "__main__":
+    ecd = PepEncoder("../data/vocab.txt")
     # print(ecd('1', 'ABMMMBBAAAA', 'ABM'))
-    print(ecd('1', 'ABMMMBBAAAA', ''))
+    print(ecd("1", "ABMMMBBAAAA", ""))

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 
 class ScafState(ABC):
-
     @abstractmethod
     def result(self):
         """
@@ -60,6 +59,6 @@ class ScafState(ABC):
         """
         pass
 
+
 class AbstractScafAction(ABC):
     pass
-

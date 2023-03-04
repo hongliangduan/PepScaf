@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 
 
 class MonteCarloTreeSearchNode(ABC):
-
     def __init__(self, state, parent=None):
         """
         Parameters
@@ -71,7 +70,10 @@ class MonteCarloTreeSearchNode(ABC):
         ]
         # 逆转从大到小
         # 取最大的几个
-        return [(self.children[i], choices_weights[i]) for i in np.argsort(choices_weights)[::-1][:n_best]]
+        return [
+            (self.children[i], choices_weights[i])
+            for i in np.argsort(choices_weights)[::-1][:n_best]
+        ]
 
     def rollout_policy(self, possible_moves):
         return possible_moves[np.random.randint(len(possible_moves))]
@@ -80,7 +82,7 @@ class MonteCarloTreeSearchNode(ABC):
 class ScafMonteCarloTreeSearchNode(MonteCarloTreeSearchNode):
     def __init__(self, state, parent=None):
         super().__init__(state, parent)
-        self._number_of_visits = 0.
+        self._number_of_visits = 0.0
         self._results = defaultdict(int)
         self._untried_actions = None
 
@@ -103,9 +105,7 @@ class ScafMonteCarloTreeSearchNode(MonteCarloTreeSearchNode):
     def expand(self):
         action = self.untried_actions.pop()
         next_state = self.state.move(action)
-        child_node = ScafMonteCarloTreeSearchNode(
-            next_state, parent=self
-        )
+        child_node = ScafMonteCarloTreeSearchNode(next_state, parent=self)
         self.children.append(child_node)
         return child_node
 
@@ -121,7 +121,7 @@ class ScafMonteCarloTreeSearchNode(MonteCarloTreeSearchNode):
         return current_rollout_state.result
 
     def backpropagate(self, result):
-        self._number_of_visits += 1.
-        self._results[result] += 1.
+        self._number_of_visits += 1.0
+        self._results[result] += 1.0
         if self.parent:
             self.parent.backpropagate(result)
