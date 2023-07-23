@@ -75,25 +75,28 @@ bash mcts.sh  # run mcts to get the scaffold
 
 If you find the idea or code useful for your research, please cite [our paper]():
 
-> @article{doi:10.1021/acs.jmedchem.3c00627,
-> author = {Zhai, Silong and Tan, Yahong and Zhang, Chengyun and Hipolito, Christopher John and Song, Lulu and Zhu, Cheng and Zhang, Youming and Duan, Hongliang and Yin, Yizhen},
-> title = {PepScaf: Harnessing Machine Learning with In Vitro Selection toward De Novo Macrocyclic Peptides against IL-17C/IL-17RE Interaction},
-> journal = {Journal of Medicinal Chemistry},
-> volume = {0},
-> number = {0},
-> pages = {null},
-> year = {0},
-> doi = {10.1021/acs.jmedchem.3c00627},
->    note ={PMID: 37480587},
->
-> URL = { 
->        https://doi.org/10.1021/acs.jmedchem.3c00627
->    
-> },
-> eprint = { 
->         https://doi.org/10.1021/acs.jmedchem.3c00627
->     
-> }
+
+```text
+@article{doi:10.1021/acs.jmedchem.3c00627,
+author = {Zhai, Silong and Tan, Yahong and Zhang, Chengyun and Hipolito, Christopher John and Song, Lulu and Zhu, Cheng and Zhang, Youming and Duan, Hongliang and Yin, Yizhen},
+title = {PepScaf: Harnessing Machine Learning with In Vitro Selection toward De Novo Macrocyclic Peptides against IL-17C/IL-17RE Interaction},
+journal = {Journal of Medicinal Chemistry},
+volume = {0},
+number = {0},
+pages = {null},
+year = {0},
+doi = {10.1021/acs.jmedchem.3c00627},
+    note ={PMID: 37480587},
+
+URL = { 
+        https://doi.org/10.1021/acs.jmedchem.3c00627
+    
+},
+eprint = { 
+        https://doi.org/10.1021/acs.jmedchem.3c00627
+    
+}
+```
 
 ## Contact
 
