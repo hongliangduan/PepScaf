@@ -135,37 +135,36 @@ def second(scaffold: Scaffold):
             score += predictor(Pep(pep).numpy)
     log.info(f"{100*score/len(pep_set):.2f}% peptides was pedicted into positive.")
 
+if Mcts.mode == 'full':
+    state = initial_scaf_state
+    while state.result is None:
+        rest = Common.np_len - len(state.scaffold_np)
+        n_iters = 5 * 10 ** rest
+        max_iter = Mcts.max_iter if Mcts.max_iter else Mcts.n_iters
+        if n_iters >= max_iter:
+            n_iters = max_iter
+        log.info(f'Searching space is {n_iters}')
+        best_nodes = scaffold_generator(state, n_iters)
+        best_node = best_nodes[0][0]
+        score = best_nodes[0][1]
+        candidate_node = best_nodes[1][0]
+        candidate_score = best_nodes[1][1]
+        log.info(
+            f"Next is {Sentence.int2token[best_node.state.scaffold_np[-1]]}'s score: {score:.4f}.")
+        log.info(
+            f"Candidate is {Sentence.int2token[candidate_node.state.scaffold_np[-1]]}'s score: {candidate_score:.4f}.")
+        state = best_node.state
 
-# if Mcts.mode == 'full':
-#     state = initial_scaf_state
-#     while state.result is None:
-#         rest = Common.np_len - len(state.scaffold_np)
-#         n_iters = 5 * 10 ** rest
-#         max_iter = Mcts.max_iter if Mcts.max_iter else Mcts.n_iters
-#         if n_iters >= max_iter:
-#             n_iters = max_iter
-#         log.info(f'Searching space is {n_iters}')
-#         best_nodes = scaffold_generator(state, n_iters)
-#         best_node = best_nodes[0][0]
-#         score = best_nodes[0][1]
-#         candidate_node = best_nodes[1][0]
-#         candidate_score = best_nodes[1][1]
-#         log.info(
-#             f"Next is {Sentence.int2token[best_node.state.scaffold_np[-1]]}'s score: {score:.4f}.")
-#         log.info(
-#             f"Candidate is {Sentence.int2token[candidate_node.state.scaffold_np[-1]]}'s score: {candidate_score:.4f}.")
-#         state = best_node.state
-
-#     log.info(f'Scaffold Result is {state.result}')
-#     final_scaffold = np2scaffold(state.scaffold_np)
-#     log.info(f'Extracted Scaffold is {final_scaffold}')
-#     n_active = final_scaffold(data)
-#     all_n_active = final_scaffold(all_data)
-#     log.info(
-#         f'\n'
-#         f'When Applied to Data with {n} Items Whose Enrich is Above {enrich_cut}: {n_active}({100 * n_active / n:.2f}%) Aatisfied.\n'
-#         f'When Applied to All the Data with {all_n} Items: {all_n_active}({100 * all_n_active / all_n:.2f}%) Aatisfied.\n'
-#         f'Improvement Rate is {100 * n_active * all_n / n / all_n_active:.2f}%.'
-#     )
-# second(final_scaffold)
+    log.info(f'Scaffold Result is {state.result}')
+    final_scaffold = np2scaffold(state.scaffold_np)
+    log.info(f'Extracted Scaffold is {final_scaffold}')
+    n_active = final_scaffold(data)
+    all_n_active = final_scaffold(all_data)
+    log.info(
+        f'\n'
+        f'When Applied to Data with {n} Items Whose Enrich is Above {enrich_cut}: {n_active}({100 * n_active / n:.2f}%) Aatisfied.\n'
+        f'When Applied to All the Data with {all_n} Items: {all_n_active}({100 * all_n_active / all_n:.2f}%) Aatisfied.\n'
+        f'Improvement Rate is {100 * n_active * all_n / n / all_n_active:.2f}%.'
+    )
+second(final_scaffold)
 second(Scaffold("XXYYXXLYGXLX"))
